@@ -1,6 +1,8 @@
 @extends('layout')
 
 @section('content')
+
+@include('partials._search')
 <div class="container mx-auto p-4">
     <h1 class="text-3xl font-bold mb-6">Posts</h1>
 
@@ -18,13 +20,14 @@
         </h2>
         <p class="text-gray-700 mb-4">{{ $post->content }}</p>
         <p class="text-gray-600 mb-2">Category: <span class="font-medium">{{ $post->category->name }}</span></p>
+        <p class="text-gray-600 mb-2">Author: <span class="font-medium">{{ $post->user->name }}</span></p>
         <p class="text-gray-600 mb-4">Status: <span class="font-medium">{{ $post->status }}</span></p>
         <div class="flex space-x-4">
             @can('update', $post)
             <a href="{{ route('posts.edit', $post) }}" class="text-blue-500 hover:text-blue-700">Edit</a>
             @endcan
             @can('delete', $post)
-            <form action="{{ route('posts.destroy', $post) }}" method="POST" class="inline-block">
+            <form action="{{ route('posts.deleteRequest', $post) }}" method="POST" class="inline-block">
                 @csrf
                 @method('DELETE')
                 <button type="submit" class="text-red-500 hover:text-red-700">Delete</button>

@@ -4,10 +4,31 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
-use Spatie\Permission\Models\Role;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 
 class UserController extends Controller
 {
+    public function showLoginForm()
+    {
+        return view('auth.login');
+    }
+
+    public function login(Request $request)
+    {
+        $credentials = $request->only('email', 'password');
+
+        if (Auth::attempt($credentials)) {
+            $request->session()->regenerate();
+            return redirect()->intended('/');
+        }
+
+        return back()->withErrors([
+            'email' => 'The provided credentials do not match our records.',
+        ]);
+    }
+
     public function showRegistrationForm()
     {
         return view('auth.register');
@@ -15,34 +36,36 @@ class UserController extends Controller
 
     public function register(Request $request)
     {
-        $request->validate([
+        // Validate the request data
+        $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
+            'password' => 'required|string|min:6|confirmed',
         ]);
 
+        if ($validator->fails()) {
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
+
+        // Create the new user
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'password' => bcrypt($request->password),
+            'password' => Hash::make($request->password),
         ]);
 
-        $user->assignRole('user');
+        // Optionally, log the user in
+        auth()->login($user);
 
-        return redirect()->route('home')->with('success', 'Registration successful. You can now log in.');
+        // Redirect to a desired route with a success message
+        return redirect()->route('home')->with('success', 'User registered successfully.');
     }
-
-    public function requestRole(Request $request)
+    public function logout(Request $request)
     {
-        $request->validate([
-            'role' => 'required|in:author,editor',
-        ]);
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
 
-        $user = auth()->user();
-        $user->requested_role = $request->role;
-        $user->save();
-
-
-        return redirect()->route('home')->with('success', 'Role request submitted for approval.');
+        return redirect('/');
     }
 }

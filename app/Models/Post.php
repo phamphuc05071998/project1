@@ -30,6 +30,9 @@ class Post extends Model
      */
     public function scopeFilter($query, $search)
     {
+        // Ensure $search is a string
+        $search = is_array($search) ? implode(' ', $search) : $search;
+
         return $query->where('status', 'approved')
             ->when($search, function ($query, $search) {
                 return $query->where(function ($query) use ($search) {
